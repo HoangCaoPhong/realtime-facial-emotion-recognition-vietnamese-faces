@@ -1,0 +1,313 @@
+﻿================================================================================
+VN-FER-REALTIME: VIETNAMESE FACIAL EMOTION RECOGNITION PROJECT SNAPSHOT
+================================================================================
+
+========================================
+1. PROJECT OVERVIEW
+========================================
+
+Project Name: VN-FER-Realtime
+Vietnamese Facial Emotion Recognition in Real-Time
+
+Purpose:
+A deep learning computer vision application designed to recognize and classify
+emotional expressions on Vietnamese faces in real-time using a webcam. The
+project uses a pre-trained CNN model optimized for facial emotion recognition.
+
+What the Project Does:
+- Captures live video feed from webcam
+- Detects faces using Haar Cascade classifier
+- Extracts facial regions and preprocesses them (resize to 64x64, normalize)
+- Predicts emotion class (7 emotions) using a trained Keras/TensorFlow model
+- Displays bounding boxes and emotion labels with confidence scores on live video
+
+Main Features:
+1. Real-time face detection and emotion classification
+2. Modular architecture (emotion model, webcam app, utilities)
+3. Pre-trained CNN model supporting 7 emotion classes
+4. Live visualization with confidence scores
+5. Optimized for Vietnamese facial features (noted as future work)
+
+Main Entry Points:
+- demo/run_webcam.py: Main application entry point (starts real-time emotion detection)
+- training/finetune_vn.py: Training script for fine-tuning model (currently empty/placeholder)
+
+Expected Inputs/Outputs:
+Inputs:
+  - Live video stream from webcam (RGB frames)
+  - Pre-trained model weights (model/emotion_model.h5)
+Outputs:
+  - Real-time video with detected faces and emotion predictions
+  - Emotion labels with confidence scores displayed on frames
+
+
+========================================
+2. ENVIRONMENT & SETUP
+========================================
+
+Python Version:
+  - Python 3.10 (inferred from venv/Lib/python3.10)
+
+Dependencies (from requirements.txt):
+  [Note: requirements.txt is empty, but based on imports in code]
+  - TensorFlow/Keras (for model loading and inference)
+  - OpenCV (cv2) - for video capture and image processing
+  - NumPy - for numerical operations and array handling
+
+Virtual Environment:
+  Location: venv/ (Windows Python 3.10)
+
+Setup Instructions:
+
+1. Create virtual environment:
+   python -m venv venv
+
+2. Activate virtual environment:
+   # Windows
+   venv\Scripts\activate
+   # macOS/Linux
+   source venv/bin/activate
+
+3. Install dependencies:
+   pip install tensorflow opencv-python numpy
+
+4. (Optional) If requirements.txt is populated:
+   pip install -r requirements.txt
+
+How to Run:
+
+For Real-Time Inference:
+  python demo/run_webcam.py
+  
+  Controls:
+  - Press 'q' to quit the application
+
+For Model Training/Fine-tuning:
+  python training/finetune_vn.py
+  (Currently placeholder - needs implementation)
+
+Model Location:
+  - model/emotion_model.h5 (pre-trained Keras model)
+  - Size: Not included in repository (download separately per README.md)
+
+
+========================================
+3. FOLDER TREE
+========================================
+
+.
+ .gitignore
+ LICENSE
+ README.md
+ requirements.txt
+
+ app/
+    __pycache__/
+    webcam_app.py              # WebcamApp class - handles live video capture & UI
+
+ analysis/
+    observations.md             # Current status & known limitations
+
+ demo/
+    __pycache__/
+    run_webcam.py              # Main entry point - starts emotion recognition
+
+ model/
+    emotion_model.h5           # Pre-trained Keras model (not included, download separately)
+
+ models/
+    __pycache__/
+    emotion_model.py           # EmotionModel class - model wrapper for inference
+
+ training/
+    finetune_vn.py             # Training script placeholder (empty)
+
+ venv/                          # Virtual environment (excluded from project source)
+     Lib/
+        site-packages/         # Installed packages
+     Scripts/                   # Activation scripts & executables
+
+
+========================================
+4. SOURCE CODE DUMP
+========================================
+
+==============================
+FILE: README.md
+LANGUAGE: markdown
+==============================
+Model file is not included due to size. Please download separately.
+
+
+==============================
+FILE: .gitignore
+LANGUAGE: text
+==============================
+venv/
+__pycache__/
+*.pyc
+model/*.h5
+
+
+==============================
+FILE: LICENSE
+LANGUAGE: text
+==============================
+MIT License
+
+Copyright (c) 2026 Hoang Cao Phong
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+==============================
+FILE: models/emotion_model.py
+LANGUAGE: python
+==============================
+import numpy as np
+from tensorflow.keras.models import load_model
+
+INPUT_SIZE = (64, 64)
+EMOTION_LABELS = [
+    "Angry",
+    "Disgust",
+    "Fear",
+    "Happy",
+    "Sad",
+    "Surprise",
+    "Neutral"
+]
+
+class EmotionModel:
+    def __init__(self, model_path: str):
+        self.model = load_model(model_path, compile=False)
+
+    def predict(self, face_tensor):
+        """
+        face_tensor shape: (1, 64, 64, 1)
+        """
+        preds = self.model.predict(face_tensor, verbose=0)
+        idx = int(np.argmax(preds))
+        return EMOTION_LABELS[idx], float(preds[0][idx])
+
+
+==============================
+FILE: app/webcam_app.py
+LANGUAGE: python
+==============================
+import cv2
+import numpy as np
+from models.emotion_model import INPUT_SIZE
+
+class WebcamApp:
+    def __init__(self, emotion_model):
+        self.emotion_model = emotion_model
+        self.face_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        )
+        self.cap = cv2.VideoCapture(0)
+
+    def preprocess_face(self, gray_frame, x, y, w, h):
+        face = gray_frame[y:y+h, x:x+w]
+        face = cv2.resize(face, INPUT_SIZE)
+        face = face.astype("float32") / 255.0
+        face = np.reshape(face, (1, INPUT_SIZE[0], INPUT_SIZE[1], 1))
+        return face
+
+    def run(self):
+        while True:
+            ret, frame = self.cap.read()
+            if not ret:
+                break
+
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = self.face_cascade.detectMultiScale(
+                gray,
+                scaleFactor=1.3,
+                minNeighbors=5
+            )
+
+            for (x, y, w, h) in faces:
+                face_tensor = self.preprocess_face(gray, x, y, w, h)
+                emotion, conf = self.emotion_model.predict(face_tensor)
+
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                cv2.putText(
+                    frame,
+                    f"{emotion} ({conf:.2f})",
+                    (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (0, 255, 0),
+                    2
+                )
+
+            cv2.imshow(
+                "Realtime Facial Emotion Recognition (Vietnamese Faces)",
+                frame
+            )
+
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+
+        self.cap.release()
+        cv2.destroyAllWindows()
+
+
+==============================
+FILE: demo/run_webcam.py
+LANGUAGE: python
+==============================
+from models.emotion_model import EmotionModel
+from app.webcam_app import WebcamApp
+
+def main():
+    model = EmotionModel("model/emotion_model.h5")
+    app = WebcamApp(model)
+    app.run()
+
+if __name__ == "__main__":
+    main()
+
+
+==============================
+FILE: training/finetune_vn.py
+LANGUAGE: python
+==============================
+[EMPTY FILE - PLACEHOLDER FOR FUTURE TRAINING IMPLEMENTATION]
+
+
+==============================
+FILE: analysis/observations.md
+LANGUAGE: markdown
+==============================
+## Current status
+- Using pretrained FER2013-based CNN
+- No Vietnamese-specific training yet
+- Purpose: baseline inference pipeline
+
+## Known limitations
+- Dataset bias (non-Vietnamese faces)
+- Emotion ambiguity on VN facial structure
+- No quantitative evaluation yet
+
+
+===============================================================================
+END OF PROJECT SNAPSHOT
+===============================================================================
